@@ -6,23 +6,23 @@
 #
 
 library(shiny)
+library(shinyjs)
+library(shinydashboard)
+library(DT)
 
-shinyUI(fluidPage(
-
-  # Application title
-  titlePanel("Fast Gene Set Enrichment Analysis"),
-
-  # Sidebar with a slider input for number of bins
-  sidebarPanel(
-      fileInput('rnkfile', 
-                'Choose *.rnk file', 
-                accept='.rnk'),
-      fileInput('gmtfile', 
-                'Choose *.gmt file', 
-                accept='.gmt')
-  ),
-
-  mainPanel(
-    tableOutput("contents")
-  )
-))
+dashboardPage(
+    dashboardHeader(title = 'FGSEA'),
+    dashboardSidebar(
+        useShinyjs(),
+        extendShinyjs("app.js"),
+        fileInput('rnkfile',
+                  'Choose *.rnk file',
+                  accept='.rnk'),
+        fileInput('gmtfile',
+                  'Choose *.gmt file',
+                  accept='.gmt')
+    ),
+    dashboardBody(
+        dataTableOutput("contents")
+    )
+)
