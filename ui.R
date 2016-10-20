@@ -6,8 +6,9 @@
 #
 
 library(shiny)
-library(shinyjs)
 library(shinydashboard)
+library(shinyjs)
+library(shinyBS)
 library(DT)
 
 dashboardPage(
@@ -23,6 +24,7 @@ dashboardPage(
                   accept='.gmt')
     ),
     dashboardBody(
+        includeHTML("include.html"),
         dataTableOutput("contents")
     )
 )

@@ -8,44 +8,90 @@
 library(shiny)
 library(shinydashboard)
 library(shinyjs)
+library(shinyBS)
 library(DT)
 library(fgsea)
+library(ggplot2)
+
+pathways <- NULL
+ranks <- NULL
+pathway <- NULL
+imagename <- NULL
+
+update_plot <- function() {
+    plot <- plotEnrichment(pathways[[pathway]], ranks) + labs(title="Programmed Cell Death")
+    imagename <<- paste0('www/', pathway, '_plot.png')
+    ggsave(filename = imagename, plot = plot)
+}
 
 get_pathways <- function(gmt.file) {
     pathwayLines <- strsplit(readLines(gmt.file), "\t")
-    pathways <- lapply(pathwayLines, tail, -2)
-    names(pathways) <- sapply(pathwayLines, head, 1)
-    return(pathways)
+    aux <- lapply(pathwayLines, tail, -2)
+    names(aux) <- sapply(pathwayLines, head, 1)
+    return(aux)
 }
 
 get_ranks <- function(rnk.file) {
-    ranks <- read.table(rnk.file, header=T, colClasses = c("character", "numeric"))
-    ranks <- setNames(ranks$t, ranks$ID)
-    return(ranks)
+    aux <- read.table(rnk.file, header=T, colClasses = c("character", "numeric"))
+    aux <- setNames(aux$t, aux$ID)
+    return(aux)
+}
+
+createLink <- function(val) {
+    sprintf('<button id="%s" onclick="btnclick(this.id)">%s</button>', val, 'Show plot')
 }
 
 shinyServer(function(input, output) {
 
-    output$contents <- renderDataTable({
-        rnk.file <- input$rnkfile$datapath
-        gmt.file <- input$gmtfile$datapath
+    output$contents <- renderDataTable(
+        {
+            rnk.file <- input$rnkfile$datapath
+            gmt.file <- input$gmtfile$datapath
 
-        if (is.null(rnk.file) | is.null(gmt.file))
-            return(NULL)
+            if (is.null(rnk.file) | is.null(gmt.file))
+                return(NULL)
 
-        ranks <- get_ranks(rnk.file)
-        pathways <- get_pathways(gmt.file)
-        res <- fgsea(pathways, ranks, nperm=10000, maxSize=500)
-        res[,leadingEdge:=NULL]
-        res
-    }, options = list(lengthChange = TRUE,
-                      pageLength = 20,
-                      lengthMenu = c(10, 20, 50, 100, 'all'),
-                      order = list(list(6, 'desc'), list(5, 'desc'))))
+            ranks <<- get_ranks(rnk.file)
+            pathways <<- get_pathways(gmt.file)
+            res <- NULL
+            withProgress(
+                message = 'This may take a few seconds...',
+                value = 0,
+                { res <- fgsea(pathways, ranks, nperm=10000, maxSize=500) }
+                )
+            res$plot <- createLink(res$pathway)
+            res[,leadingEdge:=NULL]
+            sapply(res$pathway, function(x) {onclick(x, update_plot(x))})
+            res
+        },
+        rownames = FALSE,
+        escape = FALSE,
+        selection = 'none',
+        options = list(
+            lengthChange = TRUE,
+            pageLength = 20,
+            lengthMenu = c(10, 20, 50, 100, -1),
+            order = list(list(5, 'desc'), list(4, 'desc'))
+            )
+        )
 
     observe({
         if (!is.null(input$rnkfile$datapath) & !is.null(input$gmtfile$datapath)) {
             js$hideSidebar()
+        }
+    })
+
+    observe({
+        new_pathway <- input$JsMessage
+        if (!is.null(new_pathway)) {
+            if (is.null(pathway)) {
+                pathway <<- new_pathway
+                update_plot()
+            }
+            if (new_pathway != pathway) {
+                pathway <<- new_pathway
+                update_plot()
+            }
         }
     })
 })
