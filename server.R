@@ -60,6 +60,10 @@ shinyServer(function(input, output) {
                 { res <- fgsea(pathways, ranks, nperm=10000, maxSize=500) }
                 )
             res$plot <- createLink(res$pathway)
+            res$pval <- format(round(res$pval, 6), nsmall = 6)
+            res$padj <- format(round(res$padj, 6), nsmall = 6)
+            res$ES <- format(round(res$ES, 6), nsmall = 6)
+            res$NES <- format(round(res$NES, 6), nsmall = 6)
             res[,leadingEdge:=NULL]
             sapply(res$pathway, function(x) {onclick(x, update_plot(x))})
             res
