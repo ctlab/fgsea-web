@@ -21,11 +21,11 @@ dashboardPage(
         extendShinyjs("app.js"),
 
         fileInput('rnkfile',
-                  'Choose *.rnk file',
+                  'Choose rnk file',
                   accept='text/tab-separated-values'),
 
         fileInput('gmtfile',
-                  'Choose *.gmt file',
+                  'Choose gmt file',
                   accept='text/tab-separated-values'),
 
         downloadButton('downloadExampleRNK', 'Download sample rnk file', class="sample-download"),
