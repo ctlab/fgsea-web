@@ -18,10 +18,10 @@ dashboardPage(
         extendShinyjs("app.js"),
         fileInput('rnkfile',
                   'Choose *.rnk file',
-                  accept='.rnk'),
+                  accept='text/tab-separated-values'),
         fileInput('gmtfile',
                   'Choose *.gmt file',
-                  accept='.gmt')
+                  accept='text/tab-separated-values')
     ),
     dashboardBody(
         includeHTML("include.html"),
