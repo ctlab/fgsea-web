@@ -19,7 +19,7 @@ pathway <- NULL
 imagename <- NULL
 
 update_plot <- function() {
-    plot <- plotEnrichment(pathways[[pathway]], ranks) + labs(title="Programmed Cell Death")
+    plot <- plotEnrichment(pathways[[pathway]], ranks) + labs(title=pathway)
     imagename <<- paste0('www/', pathway, '_plot.png')
     ggsave(filename = imagename, plot = plot)
 }
