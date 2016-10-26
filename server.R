@@ -47,8 +47,8 @@ shinyServer(function(input, output) {
         filename = 'sample.rnk',
         content = function(con) {
             file.copy('./data/sample.rnk', con)
-            }
-        )
+        }
+    )
 
     output$downloadExampleGMT <- downloadHandler(
         filename = 'sample.gmt',
@@ -65,14 +65,15 @@ shinyServer(function(input, output) {
             if (is.null(rnk.file) | is.null(gmt.file))
                 return(NULL)
 
+            # hide sidebar and show loader animation
+            js$hideSidebar()
+            shinyjs::show("container")
+
+            # load and process data
             ranks <<- get_ranks(rnk.file)
             pathways <<- get_pathways(gmt.file)
             res <- NULL
-            withProgress(
-                message = 'This may take a few seconds...',
-                value = 0,
-                { res <- fgsea(pathways, ranks, nperm=10000, maxSize=500) }
-                )
+            res <- fgsea(pathways, ranks, nperm=10000, maxSize=500)
             res$plot <- createLink(res$pathway)
             res$pval <- format(round(res$pval, 6), nsmall = 6)
             res$padj <- format(round(res$padj, 6), nsmall = 6)
@@ -80,6 +81,9 @@ shinyServer(function(input, output) {
             res$NES <- format(round(res$NES, 6), nsmall = 6)
             res[,leadingEdge:=NULL]
             sapply(res$pathway, function(x) {onclick(x, update_plot(x))})
+
+            # hide loader and show table
+            shinyjs::hide("container")
             res
         },
         rownames = FALSE,
@@ -90,14 +94,8 @@ shinyServer(function(input, output) {
             pageLength = 20,
             lengthMenu = c(10, 20, 50, 100, -1),
             order = list(list(5, 'desc'), list(4, 'desc'))
-            )
         )
-
-    observe({
-        if (!is.null(input$rnkfile$datapath) & !is.null(input$gmtfile$datapath)) {
-            js$hideSidebar()
-        }
-    })
+    )
 
     observe({
         new_pathway <- input$JsMessage
