@@ -1,82 +1,123 @@
 .sample-download {
-	color: #333333;
-	margin: 0 auto;
-	display: block;
-	margin-left: 15px;
-	margin-right: 15px;
-	margin-top: 5px;
-	margin-bottom: 5px;
+    color: #333333;
+    margin: 0 auto;
+    display: block;
+    margin-left: 15px;
+    margin-right: 15px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+#container {
+    position: absolute;
+    top: 50%;
+    margin-top: -60px;
+    left: 0;
+    width: 100%;
+}
+
+#loader {
+    position: relative;
+    top: 50%;
+    transform: translateY(-50%);
+    margin: auto;
+    border: 16px solid #f3f3f3;
+    border-radius: 50%;
+    border-top: 16px solid #3C8DBC;
+    border-bottom: 16px solid #3C8DBC;
+    width: 120px;
+    height: 120px;
+    -webkit-animation: spin 2s linear infinite;
+    animation: spin 2s linear infinite;
+}
+
+@-webkit-keyframes spin {
+    0% {
+        -webkit-transform: rotate(0deg);
+    }
+    100% {
+        -webkit-transform: rotate(360deg);
+    }
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 .overlay {
-	position: fixed;
-	z-index: 1;
-	padding-top: 100px;
-	left: 0;
-	top: 0;
-	width: 100%;
-	height: 100%;
-	overflow: auto;
-	background: rgba(0, 0, 0, 0.7);
-	transition: opacity 500ms;
-	visibility: visible;
-	opacity: 1;
-	display: none;
+    position: fixed;
+    z-index: 1;
+    padding-top: 100px;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background: rgba(0, 0, 0, 0.7);
+    transition: opacity 500ms;
+    visibility: visible;
+    opacity: 1;
+    display: none;
 }
 
 .overlay:target {
-	visibility: visible;
-	opacity: 1;
+    visibility: visible;
+    opacity: 1;
 }
 
 .popup {
-	margin: 70px auto;
-	padding: 20px;
-	background: #fff;
-	border-radius: 5px;
-	width: 30%;
-	position: relative;
-	transition: all 5s ease-in-out;
+    margin: 70px auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 5px;
+    width: 30%;
+    position: relative;
+    transition: all 5s ease-in-out;
 }
 
 .popup img {
-	margin: auto;
-	display: block;
-	width: 80%;
-	max-width: 700px;
+    margin: auto;
+    display: block;
+    width: 80%;
+    max-width: 700px;
 }
 
 .popup p {
-	margin-top: 0;
-	color: #333;
-	font-family: Tahoma, Arial, sans-serif;
+    margin-top: 0;
+    color: #333;
+    font-family: Tahoma, Arial, sans-serif;
 }
 
 .popup .close {
-	position: absolute;
-	top: 20px;
-	right: 30px;
-	transition: all 200ms;
-	font-size: 30px;
-	font-weight: bold;
-	text-decoration: none;
-	color: #333;
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    transition: all 200ms;
+    font-size: 30px;
+    font-weight: bold;
+    text-decoration: none;
+    color: #333;
 }
 
 .popup .close:hover {
-	color: #06D85F;
+    color: #06D85F;
 }
 
 .popup .content {
-	max-height: 30%;
-	overflow: auto;
+    max-height: 30%;
+    overflow: auto;
 }
 
-@media screen and (max-width: 700px){
-	.box{
-		width: 70%;
-	}
-	.popup{
-		width: 70%;
-	}
+@media screen and (max-width: 700px) {
+    .box {
+        width: 70%;
+    }
+    .popup {
+        width: 70%;
+    }
 }
