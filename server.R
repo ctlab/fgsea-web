@@ -66,7 +66,7 @@ shinyServer(function(input, output) {
                 return(NULL)
 
             # hide sidebar and show loader animation
-            js$hideSidebar()
+            addClass(selector = "body", class = "sidebar-collapse")
             shinyjs::show("container")
 
             # load and process data

@@ -18,7 +18,6 @@ dashboardPage(
     dashboardSidebar(
 
         useShinyjs(),
-        extendShinyjs("app.js"),
 
         fileInput('rnkfile',
                   'Choose rnk file',
