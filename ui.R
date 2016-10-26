@@ -28,8 +28,8 @@ dashboardPage(
                   'Choose gmt file',
                   accept='text/tab-separated-values'),
 
-        downloadButton('downloadExampleRNK', 'Download sample rnk file', class="sample-download"),
-        downloadButton('downloadExampleGMT', 'Download sample gmt file', class="sample-download")
+        downloadLink('downloadExampleRNK', 'Download sample rnk file', class="sample-download"),
+        downloadLink('downloadExampleGMT', 'Download sample gmt file', class="sample-download")
     ),
 
     dashboardBody(
