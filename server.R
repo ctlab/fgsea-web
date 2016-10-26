@@ -43,6 +43,20 @@ createLink <- function(val) {
 
 shinyServer(function(input, output) {
 
+    output$downloadExampleRNK <- downloadHandler(
+        filename = 'sample.rnk',
+        content = function(con) {
+            file.copy('./data/sample.rnk', con)
+            }
+        )
+
+    output$downloadExampleGMT <- downloadHandler(
+        filename = 'sample.gmt',
+        content = function(con) {
+            file.copy('./data/sample.gmt', con)
+        }
+    )
+
     output$contents <- renderDataTable(
         {
             rnk.file <- input$rnkfile$datapath
