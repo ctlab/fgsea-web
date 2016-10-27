@@ -32,6 +32,10 @@ createLink <- function(val) {
     sprintf('<button id="%s" onclick="btnclick(this.id)">%s</button>', val, 'Show plot')
 }
 
+stripSpecialChars <- function(string) {
+    gsub("[\\'\\;\\&\\:\\,\\.]", "", string)
+}
+
 shinyServer(function(input, output, session) {
 
     output$downloadExampleRNK <- downloadHandler(
@@ -65,13 +69,13 @@ shinyServer(function(input, output, session) {
             pathways <<- get_pathways(gmt.file)
             res <- NULL
             res <- fgsea(pathways, ranks, nperm=10000, maxSize=500)
+            res$pathway <- stripSpecialChars(res$pathway)
             res$plot <- createLink(res$pathway)
             res$pval <- format(round(res$pval, 6), nsmall = 6)
             res$padj <- format(round(res$padj, 6), nsmall = 6)
             res$ES <- format(round(res$ES, 6), nsmall = 6)
             res$NES <- format(round(res$NES, 6), nsmall = 6)
             res[,leadingEdge:=NULL]
-            sapply(res$pathway, function(x) {onclick(x, update_plot(x))})
 
             # hide loader and show table
             shinyjs::hide("container")
@@ -97,6 +101,7 @@ shinyServer(function(input, output, session) {
                 plot <- plotEnrichment(pathways[[pathway]], ranks)
                 ggsave(filename = filePath, plot = plot)
             }
+            # TODO: fix this and save images in tmp folder
             message = list(link = substr(filePath, 5, nchar(filePath)), pathway = pathway)
             print(message)
             session$sendCustomMessage(type = "imageReady", message)
