@@ -1,20 +1,26 @@
 <div id="popup1" class="overlay">
-	<div class="popup">
-		<p id="caption"></p>
-		<a class="close">&times;</a>
-		<img id="plot" class="modal-content" onerror="imgError(this)">
-	</div>
+    <div class="popup">
+        <p id="caption"></p>
+        <a class="close">&times;</a>
+        <img id="plot" class="modal-content" onerror="imgError(this)">
+    </div>
 </div>
-
 <script>
-
 var modal = document.getElementById('popup1');
 var closebtn = document.getElementsByClassName('close')[0];
 
+var imageLinks = {};
+
 btnclick = function(pathway) {
-    sendPathway(pathway);
+    document.getElementById('plot').pathway = pathway;
+    if (imageLinks[pathway] == null) {
+        document.getElementById('plot').src = "some_placeholder_image_dunno";
+        sendPathway(pathway);
+    } else {
+        document.getElementById('plot').src = imageLinks[pathway];
+        //TODO: add loader animation
+    }
     document.getElementById('caption').innerHTML = pathway;
-    document.getElementById('plot').src = pathway + '_plot.png';
     modal.style.display = "inline-block";
 }
 
@@ -29,12 +35,18 @@ window.onclick = function(event) {
 
 function imgError(image) {
     image.onerror = null;
-    setTimeout(function (){
+    setTimeout(function() {
         image.src = image.src;
-     }, 3000);
+    }, 3000);
 }
 
-sendPathway = function(pathway){
-  Shiny.onInputChange("JsMessage", pathway);
+sendPathway = function(pathway) {
+    Shiny.onInputChange("pathway", pathway);
 }
+
+Shiny.addCustomMessageHandler("imageReady",
+    function(msg) {
+        imageLinks[msg["pathway"]] = msg["link"];
+        document.getElementById("plot").src = imageLinks[document.getElementById('plot').pathway];
+    });
 </script>

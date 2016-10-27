@@ -15,14 +15,6 @@ library(ggplot2)
 
 pathways <- NULL
 ranks <- NULL
-pathway <- NULL
-imagename <- NULL
-
-update_plot <- function() {
-    plot <- plotEnrichment(pathways[[pathway]], ranks) + labs(title=pathway)
-    imagename <<- paste0('www/', pathway, '_plot.png')
-    ggsave(filename = imagename, plot = plot)
-}
 
 get_pathways <- function(gmt.file) {
     pathwayLines <- strsplit(readLines(gmt.file), "\t")
@@ -41,7 +33,7 @@ createLink <- function(val) {
     sprintf('<button id="%s" onclick="btnclick(this.id)">%s</button>', val, 'Show plot')
 }
 
-shinyServer(function(input, output) {
+shinyServer(function(input, output, session) {
 
     output$downloadExampleRNK <- downloadHandler(
         filename = 'sample.rnk',
@@ -98,16 +90,17 @@ shinyServer(function(input, output) {
     )
 
     observe({
-        new_pathway <- input$JsMessage
-        if (!is.null(new_pathway)) {
-            if (is.null(pathway)) {
-                pathway <<- new_pathway
-                update_plot()
+        pathway <- input$pathway
+        if (!is.null(pathway)) {
+            print("pathway, yay!")
+            filePath <- paste0('www/', pathway, '_plot.png')
+            if (!file.exists(filePath)) {
+                plot <- plotEnrichment(pathways[[pathway]], ranks) + labs(title=pathway)
+                ggsave(filename = filePath, plot = plot)
             }
-            if (new_pathway != pathway) {
-                pathway <<- new_pathway
-                update_plot()
-            }
+            message = list(link = paste0(pathway, '_plot.png'), pathway = pathway)
+            print(message)
+            session$sendCustomMessage(type = "imageReady", message)
         }
     })
 })
