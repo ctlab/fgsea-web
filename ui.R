@@ -8,7 +8,6 @@
 library(shiny)
 library(shinydashboard)
 library(shinyjs)
-library(shinyBS)
 library(DT)
 
 dashboardPage(

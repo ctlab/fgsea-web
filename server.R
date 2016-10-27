@@ -8,11 +8,9 @@
 library(shiny)
 library(shinydashboard)
 library(shinyjs)
-library(shinyBS)
 library(DT)
 library(fgsea)
 library(ggplot2)
-library(svglite)
 
 pathways <- NULL
 ranks <- NULL
