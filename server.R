@@ -96,7 +96,7 @@ shinyServer(function(input, output, session) {
             print("pathway, yay!")
             filePath <- tempfile(tmpdir = "www", fileext = 'plot.svg')
             if (!file.exists(filePath)) {
-                plot <- plotEnrichment(pathways[[pathway]], ranks) + labs(title=pathway)
+                plot <- plotEnrichment(pathways[[pathway]], ranks)
                 ggsave(filename = filePath, plot = plot)
             }
             message = list(link = substr(filePath, 5, nchar(filePath)), pathway = pathway)
