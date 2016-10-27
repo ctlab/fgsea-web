@@ -93,12 +93,12 @@ shinyServer(function(input, output, session) {
         pathway <- input$pathway
         if (!is.null(pathway)) {
             print("pathway, yay!")
-            filePath <- paste0('www/', pathway, '_plot.png')
+            filePath <- tempfile(tmpdir = "www", fileext = 'plot.png')
             if (!file.exists(filePath)) {
                 plot <- plotEnrichment(pathways[[pathway]], ranks) + labs(title=pathway)
                 ggsave(filename = filePath, plot = plot)
             }
-            message = list(link = paste0(pathway, '_plot.png'), pathway = pathway)
+            message = list(link = substr(filePath, 5, nchar(filePath)), pathway = pathway)
             print(message)
             session$sendCustomMessage(type = "imageReady", message)
         }
