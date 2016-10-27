@@ -11,9 +11,13 @@ library(shinyjs)
 library(DT)
 library(fgsea)
 library(ggplot2)
+library(svglite)
+library(hash)
 
 pathways <- NULL
 ranks <- NULL
+stripped_to_full <- NULL
+full_to_stripped <- NULL
 
 get_pathways <- function(gmt.file) {
     pathwayLines <- strsplit(readLines(gmt.file), "\t")
@@ -69,7 +73,10 @@ shinyServer(function(input, output, session) {
             pathways <<- get_pathways(gmt.file)
             res <- NULL
             res <- fgsea(pathways, ranks, nperm=10000, maxSize=500)
-            res$pathway <- stripSpecialChars(res$pathway)
+            strippedPathways <- stripSpecialChars(res$pathway)
+            full_to_stripped <<- hash(keys=res$pathway, values=strippedPathways)
+            stripped_to_full <<- hash(keys=strippedPathways, values=res$pathway)
+            res$pathway <- strippedPathways
             res$plot <- createLink(res$pathway)
             res$pval <- format(round(res$pval, 6), nsmall = 6)
             res$padj <- format(round(res$padj, 6), nsmall = 6)
@@ -93,8 +100,8 @@ shinyServer(function(input, output, session) {
     )
 
     observe({
-        pathway <- input$pathway
-        if (!is.null(pathway)) {
+        if (!is.null(input$pathway)) {
+            pathway <- stripped_to_full[[input$pathway]]
             print("pathway, yay!")
             filePath <- tempfile(tmpdir = "www", fileext = 'plot.svg')
             if (!file.exists(filePath)) {
@@ -102,7 +109,7 @@ shinyServer(function(input, output, session) {
                 ggsave(filename = filePath, plot = plot)
             }
             # TODO: fix this and save images in tmp folder
-            message = list(link = substr(filePath, 5, nchar(filePath)), pathway = pathway)
+            message = list(link = substr(filePath, 5, nchar(filePath)), pathway = full_to_stripped[[pathway]])
             print(message)
             session$sendCustomMessage(type = "imageReady", message)
         }
