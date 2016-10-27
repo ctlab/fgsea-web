@@ -12,6 +12,7 @@ library(shinyBS)
 library(DT)
 library(fgsea)
 library(ggplot2)
+library(svglite)
 
 pathways <- NULL
 ranks <- NULL
@@ -93,7 +94,7 @@ shinyServer(function(input, output, session) {
         pathway <- input$pathway
         if (!is.null(pathway)) {
             print("pathway, yay!")
-            filePath <- tempfile(tmpdir = "www", fileext = 'plot.png')
+            filePath <- tempfile(tmpdir = "www", fileext = 'plot.svg')
             if (!file.exists(filePath)) {
                 plot <- plotEnrichment(pathways[[pathway]], ranks) + labs(title=pathway)
                 ggsave(filename = filePath, plot = plot)
