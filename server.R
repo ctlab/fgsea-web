@@ -106,7 +106,7 @@ shinyServer(function(input, output, session) {
             filePath <- tempfile(tmpdir = "www", fileext = 'plot.svg')
             if (!file.exists(filePath)) {
                 plot <- plotEnrichment(pathways[[pathway]], ranks)
-                ggsave(filename = filePath, plot = plot)
+                ggsave(filename = filePath, plot = plot, width=6, height=4)
             }
             # TODO: fix this and save images in tmp folder
             message = list(link = substr(filePath, 5, nchar(filePath)), pathway = full_to_stripped[[pathway]])
