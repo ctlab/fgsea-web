@@ -78,10 +78,10 @@ shinyServer(function(input, output, session) {
             stripped_to_full <<- hash(keys=strippedPathways, values=res$pathway)
             res$pathway <- strippedPathways
             res$plot <- createLink(res$pathway)
-            res$pval <- format(round(res$pval, 6), nsmall = 6)
-            res$padj <- format(round(res$padj, 6), nsmall = 6)
-            res$ES <- format(round(res$ES, 6), nsmall = 6)
-            res$NES <- format(round(res$NES, 6), nsmall = 6)
+            res$pval <- round(res$pval, 6)
+            res$padj <- round(res$padj, 6)
+            res$ES <- round(res$ES, 6)
+            res$NES <- round(res$NES, 6)
             res[,leadingEdge:=NULL]
 
             # hide loader and show table
