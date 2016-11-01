@@ -19,12 +19,10 @@ dashboardPage(
         useShinyjs(),
 
         fileInput('rnkfile',
-                  'Choose rnk file',
-                  accept='text/tab-separated-values'),
+                  'Choose rnk file'),
 
         fileInput('gmtfile',
-                  'Choose gmt file',
-                  accept='text/tab-separated-values'),
+                  'Choose gmt file'),
 
         downloadLink('downloadExampleRNK', 'Download sample rnk file', class="sample-download"),
         downloadLink('downloadExampleGMT', 'Download sample gmt file', class="sample-download")
