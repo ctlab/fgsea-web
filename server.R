@@ -95,7 +95,7 @@ shinyServer(function(input, output, session) {
             lengthChange = TRUE,
             pageLength = 20,
             lengthMenu = c(10, 20, 50, 100, -1),
-            order = list(list(5, 'desc'), list(4, 'desc'))
+            order = list(list(2, 'desc'))
         )
     )
 
