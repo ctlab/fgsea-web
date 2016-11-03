@@ -71,8 +71,18 @@ shinyServer(function(input, output, session) {
             # load and process data
             ranks <<- get_ranks(rnk.file)
             pathways <<- get_pathways(gmt.file)
+            print(length(pathways))
+            bonus_pathway_files <- sapply(input$checkGroup, function(set) { paste0('./data/', set, '.gmt') })
+            if (length(bonus_pathway_files > 0)) {
+                bonus_pathways <- get_pathways(bonus_pathway_files)
+                print(bonus_pathways)
+                print(length(bonus_pathways))
+                pathways <<- c(pathways, bonus_pathways)
+            }
+            print(length(pathways))
             res <- NULL
-            res <- fgsea(pathways, ranks, nperm=10000, maxSize=500)
+            set.seed(42)
+            res <- fgsea(pathways, ranks, nperm=25000, maxSize=500)
             strippedPathways <- stripSpecialChars(res$pathway)
             full_to_stripped <<- hash(keys=res$pathway, values=strippedPathways)
             stripped_to_full <<- hash(keys=strippedPathways, values=res$pathway)
@@ -95,9 +105,11 @@ shinyServer(function(input, output, session) {
             lengthChange = TRUE,
             pageLength = 20,
             lengthMenu = c(10, 20, 50, 100, -1),
-            order = list(list(2, 'desc'))
+            order = list(list(2, 'asc'))
         )
     )
+
+    observe(print(sapply(input$checkGroup, function(set) { paste0('./data/', set, '.gmt') } )))
 
     observe({
         if (!is.null(input$pathway)) {
