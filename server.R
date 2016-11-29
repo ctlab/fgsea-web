@@ -40,6 +40,11 @@ stripSpecialChars <- function(string) {
     gsub("[\\'\\;\\&\\:\\,\\.]", "", string)
 }
 
+loadPathwayFile <- function(path) {
+    bonus_pathways <- get_pathways(path)
+    pathways <<- c(pathways, bonus_pathways)
+}
+
 shinyServer(function(input, output, session) {
 
     output$downloadExampleRNK <- downloadHandler(
@@ -56,6 +61,37 @@ shinyServer(function(input, output, session) {
         }
     )
 
+    output$genesets <- renderUI({
+        checkbox = NULL
+        if (input$radio == 'mm') {
+            checkboxGroupInput("selectedGenesets", label = h3("Select gene sets"),
+                               choices = list(
+                                   "H hallmark gene sets" = 'mm.hallmark',
+                                   "C2 curated gene sets" = 'mm.c2',
+                                   "C3 motif gene sets" = 'mm.c3',
+                                   "C4 computational gene sets" = 'mm.c4',
+                                   "C5 GO gene sets" = 'mm.c5',
+                                   "C6 oncogenic signatures" = 'mm.c6',
+                                   "C7 immunologic signatures" = 'mm.c7'
+                               )
+            )
+        } else {
+            checkboxGroupInput("selectedGenesets", label = h3("Select gene sets"),
+                               choices = list(
+                                   "H hallmark gene sets" = 'hs.hallmark',
+                                   "C1 positional gene sets" = 'hs.c1',
+                                   "C2 curated gene sets" = 'hs.c2',
+                                   "C3 motif gene sets" = 'hs.c3',
+                                   "C4 computational gene sets" = 'hs.c4',
+                                   "C5 GO gene sets" = 'hs.c5',
+                                   "C6 oncogenic signatures" = 'hs.c6',
+                                   "C7 immunologic signatures" = 'hs.c7'
+                               )
+            )
+        }
+
+    })
+
     output$contents <- renderDataTable(
         {
             rnk.file <- input$rnkfile$datapath
@@ -68,18 +104,18 @@ shinyServer(function(input, output, session) {
             addClass(selector = "body", class = "sidebar-collapse")
             shinyjs::show("container")
 
-            # load and process data
+            # get data from user
             ranks <<- get_ranks(rnk.file)
             pathways <<- get_pathways(gmt.file)
-            print(length(pathways))
-            bonus_pathway_files <- sapply(input$checkGroup, function(set) { paste0('./data/', set, '.gmt') })
+            print(paste("User provided pathways:", length(pathways)))
+
+            # load base pathways
+            bonus_pathway_files <- sapply(input$selectedGenesets, function(set) { paste0('./data/', set, '.gmt') })
             if (length(bonus_pathway_files > 0)) {
-                bonus_pathways <- get_pathways(bonus_pathway_files)
-                print(bonus_pathways)
-                print(length(bonus_pathways))
-                pathways <<- c(pathways, bonus_pathways)
+                lapply(bonus_pathway_files, loadPathwayFile)
             }
-            print(length(pathways))
+            print(paste("Total pathways:", length(pathways)))
+
             res <- NULL
             set.seed(42)
             res <- fgsea(pathways, ranks, nperm=25000, maxSize=500)
@@ -109,12 +145,9 @@ shinyServer(function(input, output, session) {
         )
     )
 
-    observe(print(sapply(input$checkGroup, function(set) { paste0('./data/', set, '.gmt') } )))
-
     observe({
         if (!is.null(input$pathway)) {
             pathway <- stripped_to_full[[input$pathway]]
-            print("pathway, yay!")
             filePath <- tempfile(tmpdir = "www", fileext = 'plot.svg')
             if (!file.exists(filePath)) {
                 plot <- plotEnrichment(pathways[[pathway]], ranks)

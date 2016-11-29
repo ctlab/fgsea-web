@@ -24,25 +24,14 @@ dashboardPage(
         fileInput('gmtfile',
                   'Choose gmt file'),
 
-        checkboxGroupInput("checkGroup", label = h3("Select gene sets"),
-                           choices = list(
-                               "Hallmark gene sets" = 'hs.hallmark',
-                               "Positional gene sets" = 'hs.c1',
-                               "Chemical and genetic perturbations" = 'hs.cgp',
-                               #"Canonical pathways" = 'hs.cp',
-                               "BioCarta gene sets" = 'hs.biocarta',
-                               "KEGG gene sets" = 'hs.kegg',
-                               "Reactome gene sets" = 'hs.reactome',
-                               #"Motif gene sets" = 'hs.c3',
-                               "MicroRNA targets" = 'hs.mir',
-                               "Transcription factor targets" = 'hs.tft',
-                               "Cancer gene neighborhoods" = 'hs.cgn',
-                               "Cancer modules" = 'hs.cm',
-                               "GO gene sets" = 'hs.c5',
-                               "Oncogenic signatures" = 'hs.c6',
-                               "immunologic signatures" = 'hs.c7'
-                               )
-                           ),
+        radioButtons("radio", label = h3("Species"),
+                     choices = list(
+                         "Mus musculus" = 'mm',
+                         "Homo sapiens" = 'hs'
+                         ),
+                     selected = 'mm'),
+
+        uiOutput("genesets"),
 
         downloadLink('downloadExampleRNK', 'Download sample rnk file', class="sample-download"),
         downloadLink('downloadExampleGMT', 'Download sample gmt file', class="sample-download")
