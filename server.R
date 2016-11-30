@@ -45,6 +45,20 @@ loadPathwayFile <- function(path) {
     pathways <<- c(pathways, bonus_pathways)
 }
 
+convertToEntrez <- function(genes, format) {
+    require(org.Hs.eg.db)
+    require(org.Mm.eg.db)
+
+    converted <- AnnotationDbi::mapIds(org.Mm.eg.db, keys=genes, column="ENTREZID", keytype=format, multiVals="first")
+    if (!exists('converted')) {
+        converted <- AnnotationDbi::mapIds(org.Hs.eg.db, keys=genes, column="ENTREZID", keytype=format, multiVals="first")
+    }
+    print(paste('failed to convert', sum(is.na(converted)), 'genes'))
+    inds <- which(!is.na(converted))
+    ranks <<- ranks[inds]
+    names(ranks) <<- converted[inds]
+}
+
 shinyServer(function(input, output, session) {
 
     output$downloadExampleRNK <- downloadHandler(
@@ -104,8 +118,23 @@ shinyServer(function(input, output, session) {
             addClass(selector = "body", class = "sidebar-collapse")
             shinyjs::show("container")
 
-            # get data from user
+            # load rnk file
             ranks <<- get_ranks(rnk.file)
+
+            # convert to entrez
+            idExample <- names(ranks)[1]
+            if (is.na(as.numeric(idExample))) {
+                if (startsWith(idExample, 'ENS')) {
+                    print('detected format: ensembl')
+                    convertToEntrez(names(ranks), "ENSEMBL")
+                } else {
+                    print('detected format: symbol')
+                    convertToEntrez(names(ranks), "SYMBOL")
+                }
+            }
+
+
+            # load pathways from user
             pathways <<- get_pathways(gmt.file)
             print(paste("User provided pathways:", length(pathways)))
 
