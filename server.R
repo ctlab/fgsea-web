@@ -18,7 +18,8 @@ pathways <- NULL
 ranks <- NULL
 stripped_to_full <- NULL
 full_to_stripped <- NULL
-species <- NULL
+detectedSpecies <- NULL
+detectedFormat <- NULL
 
 get_pathways <- function(gmt.file) {
     pathwayLines <- strsplit(readLines(gmt.file), "\t")
@@ -50,16 +51,40 @@ convertToEntrez <- function(genes, format) {
     require(org.Hs.eg.db)
     require(org.Mm.eg.db)
 
-    converted <- AnnotationDbi::mapIds(org.Mm.eg.db, keys=genes, column="ENTREZID", keytype=format, multiVals="first")
-    species <<- 'mm'
-    if (!exists('converted')) {
+    if (detectedSpecies == 'mm')
+        converted <- AnnotationDbi::mapIds(org.Mm.eg.db, keys=genes, column="ENTREZID", keytype=format, multiVals="first")
+    else
         converted <- AnnotationDbi::mapIds(org.Hs.eg.db, keys=genes, column="ENTREZID", keytype=format, multiVals="first")
-        species <<- 'hs'
-    }
+
     print(paste('failed to convert', sum(is.na(converted)), 'genes'))
     inds <- which(!is.na(converted))
     ranks <<- ranks[inds]
     names(ranks) <<- converted[inds]
+}
+
+detectSpecies <- function() {
+    idExample <- names(ranks)[1]
+    detectedFormat <<- 'ENTREZID'
+    if (is.na(as.numeric(idExample))) {
+        if (startsWith(idExample, 'ENS')) {
+            detectedFormat <<- 'ENSEMBL'
+        } else {
+            detectedFormat <<- 'SYMBOL'
+        }
+        converted <- AnnotationDbi::mapIds(org.Mm.eg.db, keys=names(ranks), column="ENTREZID", keytype=detectedFormat, multiVals="first")
+        detectedSpecies <<- 'mm'
+        if (!exists('converted')) {
+            detectedSpecies <<- 'hs'
+        }
+        print(paste(detectedFormat, detectedSpecies))
+    } else {
+        converted <- AnnotationDbi::mapIds(org.Mm.eg.db, keys=names(ranks), column="SYMBOL", keytype="ENTREZID", multiVals="first")
+        detectedSpecies <<- 'mm'
+        if (!exists('converted')) {
+            detectedSpecies <<- 'hs'
+        }
+    }
+    return(detectedSpecies)
 }
 
 shinyServer(function(input, output, session) {
@@ -78,9 +103,26 @@ shinyServer(function(input, output, session) {
         }
     )
 
-    output$genesets <- renderUI({
-        checkbox = NULL
-        if (input$radio == 'mm') {
+    output$useOwnPathwaysRadio <- renderUI({
+        rnk.file <- input$rnkfile$datapath
+        if (is.null(rnk.file))
+            return(NULL)
+
+        ranks <<- get_ranks(rnk.file)
+        detectSpecies()
+        radioButtons("useOwnPathways", "Pathways",
+                     c("Use my own pathways" = TRUE,
+                       "Use curated pathways" = FALSE))
+    })
+
+    output$selectPathways <- renderUI({
+
+        if (is.null(input$useOwnPathways))
+            return(NULL)
+
+        if (input$useOwnPathways) {
+            fileInput('gmtfile','Choose gmt file')
+        } else if (detectedSpecies == 'mm') {
             checkboxGroupInput("selectedGenesets", label = h3("Select gene sets"),
                                choices = list(
                                    "H hallmark gene sets" = 'mm.hallmark',
@@ -90,8 +132,8 @@ shinyServer(function(input, output, session) {
                                    "C5 GO gene sets" = 'mm.c5',
                                    "C6 oncogenic signatures" = 'mm.c6',
                                    "C7 immunologic signatures" = 'mm.c7'
+                                   )
                                )
-            )
         } else {
             checkboxGroupInput("selectedGenesets", label = h3("Select gene sets"),
                                choices = list(
@@ -103,10 +145,9 @@ shinyServer(function(input, output, session) {
                                    "C5 GO gene sets" = 'hs.c5',
                                    "C6 oncogenic signatures" = 'hs.c6',
                                    "C7 immunologic signatures" = 'hs.c7'
+                                   )
                                )
-            )
         }
-
     })
 
     output$contents <- renderDataTable(
@@ -124,14 +165,14 @@ shinyServer(function(input, output, session) {
             # load rnk file
             ranks <<- get_ranks(rnk.file)
 
+            print(paste('detected species:', detectSpecies()))
+
             # convert to entrez
             idExample <- names(ranks)[1]
             if (is.na(as.numeric(idExample))) {
                 if (startsWith(idExample, 'ENS')) {
-                    print('detected format: ensembl')
                     convertToEntrez(names(ranks), "ENSEMBL")
                 } else {
-                    print('detected format: symbol')
                     convertToEntrez(names(ranks), "SYMBOL")
                 }
             }

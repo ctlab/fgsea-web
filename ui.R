@@ -21,17 +21,8 @@ dashboardPage(
         fileInput('rnkfile',
                   'Choose rnk file'),
 
-        fileInput('gmtfile',
-                  'Choose gmt file'),
-
-        radioButtons("radio", label = h3("Species"),
-                     choices = list(
-                         "Mus musculus" = 'mm',
-                         "Homo sapiens" = 'hs'
-                         ),
-                     selected = 'mm'),
-
-        uiOutput("genesets"),
+        uiOutput("useOwnPathwaysRadio"),
+        uiOutput("selectPathways"),
 
         downloadLink('downloadExampleRNK', 'Download sample rnk file', class="sample-download"),
         downloadLink('downloadExampleGMT', 'Download sample gmt file', class="sample-download")
