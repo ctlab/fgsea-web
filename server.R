@@ -78,14 +78,14 @@ detectSpecies <- function() {
         } else {
             detectedFormat <<- 'SYMBOL'
         }
-        converted <- AnnotationDbi::mapIds(org.Mm.eg.db, keys=names(ranks), column="ENTREZID", keytype=detectedFormat, multiVals="first")
+        converted <- AnnotationDbi::mapIds(org.Mm.eg.db, keys=idExample, column="ENTREZID", keytype=detectedFormat, multiVals="first")
         detectedSpecies <<- 'mm'
         if (!exists('converted')) {
             detectedSpecies <<- 'hs'
         }
         print(paste(detectedFormat, detectedSpecies))
     } else {
-        converted <- AnnotationDbi::mapIds(org.Mm.eg.db, keys=names(ranks), column="ENTREZID", keytype=detectedFormat, multiVals="first")
+        converted <- AnnotationDbi::mapIds(org.Mm.eg.db, keys=idExample, column="ENTREZID", keytype=detectedFormat, multiVals="first")
         detectedSpecies <<- 'mm'
         if (!exists('converted')) {
             detectedSpecies <<- 'hs'
