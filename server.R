@@ -18,6 +18,7 @@ pathways <- NULL
 ranks <- NULL
 stripped_to_full <- NULL
 full_to_stripped <- NULL
+species <- NULL
 
 get_pathways <- function(gmt.file) {
     pathwayLines <- strsplit(readLines(gmt.file), "\t")
@@ -50,8 +51,10 @@ convertToEntrez <- function(genes, format) {
     require(org.Mm.eg.db)
 
     converted <- AnnotationDbi::mapIds(org.Mm.eg.db, keys=genes, column="ENTREZID", keytype=format, multiVals="first")
+    species <<- 'mm'
     if (!exists('converted')) {
         converted <- AnnotationDbi::mapIds(org.Hs.eg.db, keys=genes, column="ENTREZID", keytype=format, multiVals="first")
+        species <<- 'hs'
     }
     print(paste('failed to convert', sum(is.na(converted)), 'genes'))
     inds <- which(!is.na(converted))
