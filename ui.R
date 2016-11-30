@@ -23,6 +23,7 @@ dashboardPage(
 
         uiOutput("useOwnPathwaysRadio"),
         uiOutput("selectPathways"),
+        actionButton("submitButton", "Perform Enrichment"),
 
         downloadLink('downloadExampleRNK', 'Download sample rnk file', class="sample-download"),
         downloadLink('downloadExampleGMT', 'Download sample gmt file', class="sample-download")

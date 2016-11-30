@@ -20,6 +20,7 @@ stripped_to_full <- NULL
 full_to_stripped <- NULL
 detectedSpecies <- NULL
 detectedFormat <- NULL
+alreadyConverted <- FALSE
 
 get_pathways <- function(gmt.file) {
     pathwayLines <- strsplit(readLines(gmt.file), "\t")
@@ -47,19 +48,25 @@ loadPathwayFile <- function(path) {
     pathways <<- c(pathways, bonus_pathways)
 }
 
-convertToEntrez <- function(genes, format) {
+convertToEntrez <- function() {
     require(org.Hs.eg.db)
     require(org.Mm.eg.db)
 
-    if (detectedSpecies == 'mm')
-        converted <- AnnotationDbi::mapIds(org.Mm.eg.db, keys=genes, column="ENTREZID", keytype=format, multiVals="first")
-    else
-        converted <- AnnotationDbi::mapIds(org.Hs.eg.db, keys=genes, column="ENTREZID", keytype=format, multiVals="first")
+    if (alreadyConverted) {
+        return()
+    }
 
-    print(paste('failed to convert', sum(is.na(converted)), 'genes'))
+    if (detectedSpecies == 'mm') {
+        converted <- AnnotationDbi::mapIds(org.Mm.eg.db, keys=names(ranks), column="ENTREZID", keytype=detectedFormat, multiVals="first")
+    } else {
+        converted <- AnnotationDbi::mapIds(org.Hs.eg.db, keys=names(ranks), column="ENTREZID", keytype=detectedFormat, multiVals="first")
+    }
+
+    print(paste('Failed to convert', sum(is.na(converted)), 'genes'))
     inds <- which(!is.na(converted))
     ranks <<- ranks[inds]
     names(ranks) <<- converted[inds]
+    alreadyConverted <<- TRUE
 }
 
 detectSpecies <- function() {
@@ -78,7 +85,7 @@ detectSpecies <- function() {
         }
         print(paste(detectedFormat, detectedSpecies))
     } else {
-        converted <- AnnotationDbi::mapIds(org.Mm.eg.db, keys=names(ranks), column="SYMBOL", keytype="ENTREZID", multiVals="first")
+        converted <- AnnotationDbi::mapIds(org.Mm.eg.db, keys=names(ranks), column="ENTREZID", keytype=detectedFormat, multiVals="first")
         detectedSpecies <<- 'mm'
         if (!exists('converted')) {
             detectedSpecies <<- 'hs'
@@ -112,7 +119,8 @@ shinyServer(function(input, output, session) {
         detectSpecies()
         radioButtons("useOwnPathways", "Pathways",
                      c("Use my own pathways" = TRUE,
-                       "Use curated pathways" = FALSE))
+                       "Use curated pathways" = FALSE),
+                     selected = FALSE)
     })
 
     output$selectPathways <- renderUI({
@@ -150,62 +158,58 @@ shinyServer(function(input, output, session) {
         }
     })
 
-    output$contents <- renderDataTable(
-        {
-            rnk.file <- input$rnkfile$datapath
-            gmt.file <- input$gmtfile$datapath
+    processButtonClick <- eventReactive(input$submitButton, {
+        if (is.null(detectedSpecies) | is.null(input$useOwnPathways))
+            return(NULL)
 
-            if (is.null(rnk.file) | is.null(gmt.file))
+        if (input$useOwnPathways) {
+            # Using user defined pathways, therefore we don't convert input genes to entrez
+            gmt.file <- input$gmtfile$datapath
+            if (is.null(gmt.file))
                 return(NULL)
 
-            # hide sidebar and show loader animation
             addClass(selector = "body", class = "sidebar-collapse")
             shinyjs::show("container")
 
-            # load rnk file
-            ranks <<- get_ranks(rnk.file)
-
-            print(paste('detected species:', detectSpecies()))
-
-            # convert to entrez
-            idExample <- names(ranks)[1]
-            if (is.na(as.numeric(idExample))) {
-                if (startsWith(idExample, 'ENS')) {
-                    convertToEntrez(names(ranks), "ENSEMBL")
-                } else {
-                    convertToEntrez(names(ranks), "SYMBOL")
-                }
-            }
-
-
-            # load pathways from user
             pathways <<- get_pathways(gmt.file)
             print(paste("User provided pathways:", length(pathways)))
 
-            # load base pathways
+        } else {
+            # Predefined pathways, converting genes to entrez
+            if (length(input$selectedGenesets) == 0)
+                return(NULL)
+
+            addClass(selector = "body", class = "sidebar-collapse")
+            shinyjs::show("container")
+
+            convertToEntrez()
+            pathways <<- NULL
             bonus_pathway_files <- sapply(input$selectedGenesets, function(set) { paste0('./data/', set, '.gmt') })
-            if (length(bonus_pathway_files > 0)) {
-                lapply(bonus_pathway_files, loadPathwayFile)
-            }
-            print(paste("Total pathways:", length(pathways)))
+            lapply(bonus_pathway_files, loadPathwayFile)
 
-            res <- NULL
-            set.seed(42)
-            res <- fgsea(pathways, ranks, nperm=25000, maxSize=500)
-            strippedPathways <- stripSpecialChars(res$pathway)
-            full_to_stripped <<- hash(keys=res$pathway, values=strippedPathways)
-            stripped_to_full <<- hash(keys=strippedPathways, values=res$pathway)
-            res$pathway <- strippedPathways
-            res$plot <- createLink(res$pathway)
-            res$pval <- round(res$pval, 6)
-            res$padj <- round(res$padj, 6)
-            res$ES <- round(res$ES, 6)
-            res$NES <- round(res$NES, 6)
-            res[,leadingEdge:=NULL]
+            print(paste("User selected predefined pathways:", length(pathways)))
+        }
 
-            # hide loader and show table
-            shinyjs::hide("container")
-            res
+        res <- NULL
+        set.seed(42)
+        res <- fgsea(pathways, ranks, nperm=25000, maxSize=500)
+        strippedPathways <- stripSpecialChars(res$pathway)
+        full_to_stripped <<- hash(keys=res$pathway, values=strippedPathways)
+        stripped_to_full <<- hash(keys=strippedPathways, values=res$pathway)
+        res$pathway <- strippedPathways
+        res$plot <- createLink(res$pathway)
+        res$pval <- round(res$pval, 6)
+        res$padj <- round(res$padj, 6)
+        res$ES <- round(res$ES, 6)
+        res$NES <- round(res$NES, 6)
+        res[,leadingEdge:=NULL]
+        shinyjs::hide("container")
+        return(res)
+    })
+
+    output$contents <- renderDataTable(
+        {
+            processButtonClick()
         },
         rownames = FALSE,
         escape = FALSE,
