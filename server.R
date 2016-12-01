@@ -219,7 +219,8 @@ shinyServer(function(input, output, session) {
     observe({
         if (!is.null(input$pathway)) {
             pathway <- stripped_to_full[[input$pathway]]
-            filePath <- tempfile(tmpdir = "www", fileext = 'plot.svg')
+            dir.create("www/img", showWarnings=FALSE)
+            filePath <- tempfile(tmpdir = "www/img", fileext = '.svg')
             if (!file.exists(filePath)) {
                 plot <- plotEnrichment(pathways[[pathway]], ranks)
                 ggsave(filename = filePath, plot = plot, width=6, height=4)
