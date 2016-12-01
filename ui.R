@@ -31,11 +31,9 @@ dashboardPage(
 
     dashboardBody(
         useShinyjs(),
-        tags$head(
-            tags$link(rel = "stylesheet", type = "text/css", href = "styles.css")
-        ),
+        includeCSS("C:/Users/pinguinson/Documents/fgseaweb/styles.css"),
         shinyjs::hidden(div(id = "container", div(id = "loader"))),
-        includeHTML("include.html"),
+        includeHTML("C:/Users/pinguinson/Documents/fgseaweb/include.html"),
         dataTableOutput("contents")
     )
 )
