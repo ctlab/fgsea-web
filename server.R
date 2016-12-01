@@ -13,6 +13,8 @@ library(fgsea)
 library(ggplot2)
 library(svglite)
 library(hash)
+library(org.Hs.eg.db)
+library(org.Mm.eg.db)
 
 pathways <- NULL
 ranks <- NULL
@@ -49,10 +51,7 @@ loadPathwayFile <- function(path) {
 }
 
 convertToEntrez <- function() {
-    require(org.Hs.eg.db)
-    require(org.Mm.eg.db)
-
-    if (alreadyConverted) {
+    if (alreadyConverted | detectedFormat == 'ENTREZID') {
         return()
     }
 
@@ -78,19 +77,13 @@ detectSpecies <- function() {
         } else {
             detectedFormat <<- 'SYMBOL'
         }
-        converted <- AnnotationDbi::mapIds(org.Mm.eg.db, keys=idExample, column="ENTREZID", keytype=detectedFormat, multiVals="first")
-        detectedSpecies <<- 'mm'
-        if (!exists('converted')) {
-            detectedSpecies <<- 'hs'
-        }
-        print(paste(detectedFormat, detectedSpecies))
-    } else {
-        converted <- AnnotationDbi::mapIds(org.Mm.eg.db, keys=idExample, column="ENTREZID", keytype=detectedFormat, multiVals="first")
-        detectedSpecies <<- 'mm'
-        if (!exists('converted')) {
-            detectedSpecies <<- 'hs'
-        }
     }
+    converted <- AnnotationDbi::mapIds(org.Mm.eg.db, keys=idExample, column="ENTREZID", keytype=detectedFormat, multiVals="first")
+    detectedSpecies <<- 'mm'
+    if (!exists('converted')) {
+        detectedSpecies <<- 'hs'
+    }
+    print(paste(detectedFormat, detectedSpecies))
     return(detectedSpecies)
 }
 
