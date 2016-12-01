@@ -15,6 +15,7 @@ library(svglite)
 library(hash)
 library(org.Hs.eg.db)
 library(org.Mm.eg.db)
+library(AnnotationDbi)
 
 pathways <- NULL
 ranks <- NULL
