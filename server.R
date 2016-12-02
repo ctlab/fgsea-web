@@ -113,7 +113,7 @@ shinyServer(function(input, output, session) {
         detectSpecies()
         radioButtons("useOwnPathways", "Pathways",
                      c("Use my own pathways" = TRUE,
-                       "Use curated pathways" = FALSE),
+                       "Use standard pathways" = FALSE),
                      selected = FALSE)
     })
 
@@ -125,7 +125,7 @@ shinyServer(function(input, output, session) {
         if (input$useOwnPathways) {
             fileInput('gmtfile','Choose gmt file')
         } else if (detectedSpecies == 'mm') {
-            checkboxGroupInput("selectedGenesets", label = h3("Select gene sets"),
+            checkboxGroupInput("selectedGenesets", label = "Select gene sets",
                                choices = list(
                                    "H hallmark gene sets" = 'mm.hallmark',
                                    "C2 curated gene sets" = 'mm.c2',
@@ -137,7 +137,7 @@ shinyServer(function(input, output, session) {
                                    )
                                )
         } else {
-            checkboxGroupInput("selectedGenesets", label = h3("Select gene sets"),
+            checkboxGroupInput("selectedGenesets", label = "Select gene sets",
                                choices = list(
                                    "H hallmark gene sets" = 'hs.hallmark',
                                    "C1 positional gene sets" = 'hs.c1',

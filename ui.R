@@ -23,7 +23,7 @@ dashboardPage(
 
         uiOutput("useOwnPathwaysRadio"),
         uiOutput("selectPathways"),
-        actionButton("submitButton", "Perform Enrichment"),
+        actionButton("submitButton", "Perform Enrichment", class="btn-submit"),
 
         downloadLink('downloadExampleRNK', 'Download sample rnk file', class="sample-download"),
         downloadLink('downloadExampleGMT', 'Download sample gmt file', class="sample-download")
@@ -31,9 +31,9 @@ dashboardPage(
 
     dashboardBody(
         useShinyjs(),
-        includeCSS("styles.css"),
+        includeCSS("static/styles.css"),
         shinyjs::hidden(div(id = "container", div(id = "loader"))),
-        includeHTML("include.html"),
+        includeHTML("static/include.html"),
         dataTableOutput("contents")
     )
 )
