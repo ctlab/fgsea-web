@@ -8,6 +8,11 @@
     margin-bottom: 5px;
 }
 
+.btn-submit {
+    margin:0 auto;
+    display:block;
+}
+
 #container {
     position: absolute;
     top: 50%;
