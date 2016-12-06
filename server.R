@@ -83,7 +83,12 @@ detectSpecies <- function() {
         converted <- AnnotationDbi::mapIds(org.Mm.eg.db, keys=idExample, column="ENTREZID", keytype=detectedFormat, multiVals="first")
         'mm'
     }, error = function(e) {
-        'hs'
+        tryCatch({
+            converted <- AnnotationDbi::mapIds(org.Hs.eg.db, keys=idExample, column="ENTREZID", keytype=detectedFormat, multiVals="first")
+            'hs'
+        }, error = function(e) {
+            'unknown'
+        })
     })
     print(paste(detectedFormat, detectedSpecies))
     return(detectedSpecies)
