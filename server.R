@@ -79,11 +79,12 @@ detectSpecies <- function() {
             detectedFormat <<- 'SYMBOL'
         }
     }
-    converted <- AnnotationDbi::mapIds(org.Mm.eg.db, keys=idExample, column="ENTREZID", keytype=detectedFormat, multiVals="first")
-    detectedSpecies <<- 'mm'
-    if (!exists('converted')) {
-        detectedSpecies <<- 'hs'
-    }
+    detectedSpecies <<- tryCatch({
+        converted <- AnnotationDbi::mapIds(org.Mm.eg.db, keys=idExample, column="ENTREZID", keytype=detectedFormat, multiVals="first")
+        'mm'
+    }, error = function(e) {
+        'hs'
+    })
     print(paste(detectedFormat, detectedSpecies))
     return(detectedSpecies)
 }
