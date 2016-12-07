@@ -117,10 +117,16 @@ shinyServer(function(input, output, session) {
 
         ranks <<- get_ranks(rnk.file)
         detectSpecies()
-        radioButtons("useOwnPathways", "Pathways",
-                     c("Use my own pathways" = TRUE,
-                       "Use standard pathways" = FALSE),
-                     selected = FALSE)
+        if (detectedSpecies == 'unknown') {
+            radioButtons("useOwnPathways", "Pathways",
+                         c("Use my own pathways" = TRUE),
+                         selected = TRUE)
+        } else {
+            radioButtons("useOwnPathways", "Pathways",
+                         c("Use my own pathways" = TRUE,
+                           "Use standard pathways" = FALSE),
+                         selected = FALSE)
+        }
     })
 
     output$selectPathways <- renderUI({
