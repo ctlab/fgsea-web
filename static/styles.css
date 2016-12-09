@@ -1,3 +1,20 @@
+ul {
+  list-style: none;
+  padding-left: 7px;
+  margin: 5px;
+}
+
+li {
+  margin: 0px 0;
+}
+
+label {
+    display: inline-block;
+    max-width: 100%;
+    margin-bottom: 0px;
+    font-weight: normal;
+}
+
 .sample-download {
     color: #333333;
     margin: 0 auto;
@@ -9,8 +26,15 @@
 }
 
 .btn-submit {
-    margin:0 auto;
-    display:block;
+    margin: 12px 15px 0px 12px;
+}
+
+h5 {
+    margin: 12px 15px 0px 12px;
+}
+
+h4 {
+    margin: 12px 15px 0px 12px;
 }
 
 #container {

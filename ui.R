@@ -10,11 +10,15 @@ library(shinydashboard)
 library(shinyjs)
 library(DT)
 
+SIDEBAR_WIDTH <- 320
+
 dashboardPage(
 
-    dashboardHeader(title = 'FGSEA'),
+    dashboardHeader(title = 'FGSEA',
+                    titleWidth = SIDEBAR_WIDTH),
 
     dashboardSidebar(
+        width = SIDEBAR_WIDTH,
 
         useShinyjs(),
 

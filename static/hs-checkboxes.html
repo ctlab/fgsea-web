@@ -1,0 +1,159 @@
+<h5>Select geneset collections</h5>
+<ul>
+  <li>
+    <input type="checkbox" name="hallmark" id="hallmark" class="leaf">
+    <label for="hallmark">H: hallmark gene sets</label>
+  </li>
+  <li>
+    <input type="checkbox" name="c1" id="c1" class="leaf">
+    <label for="c1">C1: positional gene sets</label>
+  </li>
+  <li>
+    <input type="checkbox" name="c2" id="c2">
+    <label for="c2">C2: curated gene sets</label>
+    <ul>
+      <li>
+        <input type="checkbox" name="c2.cgp" id="c2.cgp" class="leaf">
+        <label for="c2.cgp">CGP: chemical and genetic perturbations</label>
+      </li>
+      <li>
+        <input type="checkbox" name="c2.cp" id="c2.cp">
+        <label for="c2.cp">CP: Canonical pathways</label>
+        <ul>
+          <li>
+            <input type="checkbox" name="c2.cp.biocarta" id="c2.cp.biocarta" class="leaf">
+            <label for="c2.cp.biocarta">BIOCARTA: BioCarta gene sets</label>
+          </li>
+          <li>
+            <input type="checkbox" name="c2.cp.kegg" id="c2.cp.kegg" class="leaf">
+            <label for="c2.cp.kegg">KEGG: KEGG gene sets</label>
+          </li>
+          <li>
+            <input type="checkbox" name="c2.cp.reactome" id="c2.cp.reactome" class="leaf">
+            <label for="c2.cp.reactome">REACTOME: Reactome gene sets</label>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>
+    <input type="checkbox" name="c3" id="c3">
+    <label for="c3">C3: motif gene sets</label>
+    <ul>
+      <li>
+        <input type="checkbox" name="c3.mir" id="c3.mir" class="leaf">
+        <label for="c3.mir">MIR: microRNA targets</label>
+      </li>
+      <li>
+        <input type="checkbox" name="c3.tft" id="c3.tft" class="leaf">
+        <label for="c3.tft">TFT: transcription factor targets</label>
+      </li>
+    </ul>
+  </li>
+  <li>
+    <input type="checkbox" name="c4" id="c4">
+    <label for="c4">C4: computational gene sets</label>
+    <ul>
+      <li>
+        <input type="checkbox" name="c4.cgn" id="c4.cgn" class="leaf">
+        <label for="c4.cgn">CGN: cancer gene neighborhoods</label>
+      </li>
+      <li>
+        <input type="checkbox" name="c4.cm" id="c4.cm" class="leaf">
+        <label for="c4.cm">CM: cancer modules</label>
+      </li>
+    </ul>
+  </li>
+  <li>
+    <input type="checkbox" name="c5" id="c5">
+    <label for="c5">C5: GO gene sets</label>
+    <ul>
+      <li>
+        <input type="checkbox" name="c5.bp" id="c5.bp" class="leaf">
+        <label for="c5.bp">BP: GO biological process</label>
+      </li>
+      <li>
+        <input type="checkbox" name="c5.cc" id="c5.cc" class="leaf">
+        <label for="c5.cc">CC: GO cellular component</label>
+      </li>
+      <li>
+        <input type="checkbox" name="c5.mf" id="c5.mf" class="leaf">
+        <label for="c5.mf">MF: GO molecular function</label>
+      </li>
+    </ul>
+  </li>
+  <li>
+    <input type="checkbox" name="c6" id="c6" class="leaf">
+    <label for="c6">C6: oncogenic signatures</label>
+  </li>
+  <li>
+    <input type="checkbox" name="c7" id="c7" class="leaf">
+    <label for="c7">C7: immunologic signatures</label>
+  </li>
+</ul>
+
+<script type="text/javascript">
+  $('input[type="checkbox"]').change(function(e) {
+
+  var checked = $(this).prop("checked"),
+      container = $(this).parent(),
+      siblings = container.siblings();
+
+  container.find('input[type="checkbox"]').prop({
+    indeterminate: false,
+    checked: checked
+  });
+
+  function checkSiblings(el) {
+
+    var parent = el.parent().parent(),
+        all = true;
+
+    el.siblings().each(function() {
+      return all = ($(this).children('input[type="checkbox"]').prop("checked") === checked);
+    });
+
+    if (all && checked) {
+
+      parent.children('input[type="checkbox"]').prop({
+        indeterminate: false,
+        checked: checked
+      });
+
+      checkSiblings(parent);
+
+    } else if (all && !checked) {
+
+      parent.children('input[type="checkbox"]').prop("checked", checked);
+      parent.children('input[type="checkbox"]').prop("indeterminate", (parent.find('input[type="checkbox"]:checked').length > 0));
+      checkSiblings(parent);
+
+    } else {
+
+      el.parents("li").children('input[type="checkbox"]').prop({
+        indeterminate: true,
+        checked: false
+      });
+
+    }
+
+  }
+
+  checkSiblings(container);
+
+  // notify shiny
+  var selected = $('input:checkbox').filter(':checked').filter('.leaf').map(function() { return this.name; });
+  var array = $.map(selected, function(value, index) {
+      return [value];
+  });
+  Shiny.onInputChange("selectedGenesets", array);
+});
+
+Shiny.addCustomMessageHandler("getSelectedLeaves", function(msg) {
+    var selected = $('input:checkbox').filter(':checked').filter('.leaf').map(function() { return this.name; });
+    var array = $.map(selected, function(value, index) {
+        return [value];
+    });
+    Shiny.onInputChange("selectedGenesets", array);
+});
+</script>

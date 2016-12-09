@@ -62,7 +62,7 @@ convertToEntrez <- function() {
         converted <- AnnotationDbi::mapIds(org.Hs.eg.db, keys=names(ranks), column="ENTREZID", keytype=detectedFormat, multiVals="first")
     }
 
-    print(paste('Failed to convert', sum(is.na(converted)), 'genes'))
+    print(paste('Failed to convert', sum(is.na(converted)), '/', length(converted), 'genes'))
     inds <- which(!is.na(converted))
     ranks <<- ranks[inds]
     names(ranks) <<- converted[inds]
@@ -118,11 +118,10 @@ shinyServer(function(input, output, session) {
         ranks <<- get_ranks(rnk.file)
         detectSpecies()
         if (detectedSpecies == 'unknown') {
-            radioButtons("useOwnPathways", "Pathways",
-                         c("Use my own pathways" = TRUE),
-                         selected = TRUE)
+            return(NULL)
         } else {
-            radioButtons("useOwnPathways", "Pathways",
+            title <- ifelse(detectedSpecies == 'hs', 'Detected species: Homo sapiens', 'Detected species: Mus musculus')
+            radioButtons("useOwnPathways", title,
                          c("Use my own pathways" = TRUE,
                            "Use standard pathways" = FALSE),
                          selected = FALSE)
@@ -131,44 +130,29 @@ shinyServer(function(input, output, session) {
 
     output$selectPathways <- renderUI({
 
-        if (is.null(input$useOwnPathways))
+        if (is.null(input$rnkfile$datapath))
             return(NULL)
 
-        if (input$useOwnPathways) {
-            fileInput('gmtfile','Choose gmt file')
+        if (is.null(detectedSpecies))
+            return(NULL)
+
+        if (detectedSpecies == 'unknown') {
+            fileInput('gmtfile', 'Unknown species, use your own *.gmt file')
+        } else if (input$useOwnPathways) {
+            fileInput('gmtfile', 'Choose gmt file')
         } else if (detectedSpecies == 'mm') {
-            checkboxGroupInput("selectedGenesets", label = "Select gene sets",
-                               choices = list(
-                                   "H hallmark gene sets" = 'mm.hallmark',
-                                   "C2 curated gene sets" = 'mm.c2',
-                                   "C3 motif gene sets" = 'mm.c3',
-                                   "C4 computational gene sets" = 'mm.c4',
-                                   "C5 GO gene sets" = 'mm.c5',
-                                   "C6 oncogenic signatures" = 'mm.c6',
-                                   "C7 immunologic signatures" = 'mm.c7'
-                                   )
-                               )
+            includeHTML('static/mm-checkboxes.html')
         } else {
-            checkboxGroupInput("selectedGenesets", label = "Select gene sets",
-                               choices = list(
-                                   "H hallmark gene sets" = 'hs.hallmark',
-                                   "C1 positional gene sets" = 'hs.c1',
-                                   "C2 curated gene sets" = 'hs.c2',
-                                   "C3 motif gene sets" = 'hs.c3',
-                                   "C4 computational gene sets" = 'hs.c4',
-                                   "C5 GO gene sets" = 'hs.c5',
-                                   "C6 oncogenic signatures" = 'hs.c6',
-                                   "C7 immunologic signatures" = 'hs.c7'
-                                   )
-                               )
+            includeHTML('static/hs-checkboxes.html')
         }
     })
 
     processButtonClick <- eventReactive(input$submitButton, {
-        if (is.null(detectedSpecies) | is.null(input$useOwnPathways))
-            return(NULL)
 
-        if (input$useOwnPathways) {
+        if (is.null(detectedSpecies))
+            return(NULL)
+        print(input$useOwnPathways)
+        if (detectedSpecies == 'unknown') {
             # Using user defined pathways, therefore we don't convert input genes to entrez
             gmt.file <- input$gmtfile$datapath
             if (is.null(gmt.file))
@@ -179,8 +163,19 @@ shinyServer(function(input, output, session) {
 
             pathways <<- get_pathways(gmt.file)
             print(paste("User provided pathways:", length(pathways)))
+        } else if (input$useOwnPathways) {
+            # Using user defined pathways, therefore we don't convert input genes to entrez
+            gmt.file <- input$gmtfile$datapath
+            if (is.null(gmt.file))
+                return(NULL)
 
+            addClass(selector = "body", class = "sidebar-collapse")
+            shinyjs::show("container")
+
+            pathways <<- get_pathways(gmt.file)
+            print(paste("User provided pathways:", length(pathways)))
         } else {
+            print(paste(input$selectedGenesets))
             # Predefined pathways, converting genes to entrez
             if (length(input$selectedGenesets) == 0)
                 return(NULL)
@@ -190,7 +185,8 @@ shinyServer(function(input, output, session) {
 
             convertToEntrez()
             pathways <<- NULL
-            bonus_pathway_files <- sapply(input$selectedGenesets, function(set) { paste0('./data/', set, '.gmt') })
+            bonus_pathway_files <-
+                sapply(input$selectedGenesets, function(set) { paste0('./data/', detectedSpecies, '.', set, '.gmt') })
             lapply(bonus_pathway_files, loadPathwayFile)
 
             print(paste("User selected predefined pathways:", length(pathways)))
