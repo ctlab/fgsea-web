@@ -130,20 +130,24 @@ shinyServer(function(input, output, session) {
 
     output$selectPathways <- renderUI({
 
-        if (is.null(input$rnkfile$datapath))
+        if (is.null(input$rnkfile$datapath)) {
             return(NULL)
+        }
 
-        if (is.null(detectedSpecies))
-            return(NULL)
-
-        if (detectedSpecies == 'unknown') {
-            fileInput('gmtfile', 'Unknown species, use your own *.gmt file')
-        } else if (input$useOwnPathways) {
-            fileInput('gmtfile', 'Choose gmt file')
-        } else if (detectedSpecies == 'mm') {
-            includeHTML('static/mm-checkboxes.html')
+        if (!is.null(input$useOwnPathways)) {
+            if (input$useOwnPathways) {
+                fileInput('gmtfile', 'Choose *.gmt file')
+            } else if (detectedSpecies == 'mm') {
+                includeHTML('static/mm-checkboxes.html')
+            } else {
+                includeHTML('static/hs-checkboxes.html')
+            }
         } else {
-            includeHTML('static/hs-checkboxes.html')
+            if (!is.null(detectedSpecies)) {
+                fileInput('gmtfile', 'Unknown species, use your own *.gmt file')
+            } else {
+                return(NULL)
+            }
         }
     })
 
