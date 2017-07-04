@@ -25,12 +25,11 @@ dashboardPage(
         fileInput('tsvfile',
                   'Choose DE tsv file'),
 
-        uiOutput("useOwnPathwaysRadio"),
+        uiOutput("uiDEInfo"),
         uiOutput("selectPathways"),
         actionButton("submitButton", "Perform Enrichment", class="btn-submit"),
 
-        downloadLink('downloadExampleTSV', 'Download sample DE tsv file', class="sample-download"),
-        downloadLink('downloadExampleGMT', 'Download sample gmt file', class="sample-download")
+        downloadLink('downloadExampleTSV', 'Download sample DE tsv file', class="sample-download")
     ),
 
     dashboardBody(

@@ -173,3 +173,78 @@ makeOrgAnnotation <- function(org.db,
 
     org.anno
 }
+
+#' Makes data.table with differential expression results containing
+#' all columns required for gatom and in the expected format
+#' based on metadata object
+#' @param de.raw Table with defferential expression results, an object
+#'        convertable to data.frame
+#' @param de.met Object with differential expression table metadata
+#'        acquired with getGeneDEMeta or getMetDEMeta functions
+#' @return data.table object with converted differential expressiond table
+#' @export
+#' @importFrom methods is
+prepareDE <- function(de.raw, de.meta) {
+    if (is.null(de.raw)) {
+        return(NULL)
+    }
+    if (!is(de.raw, "data.table")) {
+        de.raw <- as.data.table(
+            as.data.frame(de.raw),
+            keep.rownames = !is.numeric(attr(de.raw,
+                                             "row.names")))
+    }
+    
+    de <- copy(de.raw)
+    
+    for (columnName in names(de.meta$columns)) {
+        prepareDEColumn(de, de.raw,
+                        columnName,
+                        de.meta$columns[[columnName]])
+    }
+    de[]
+}
+
+prepareDEColumn <- function(de, de.raw, columnName, from) {
+    if (is.character(from)) {
+        if (from == columnName) {
+            return(de)
+        }
+        origToRename <- which(colnames(de) == columnName)
+        if (length(origToRename) != 0) {
+            setnames(de, origToRename, rep(paste0(columnName, ".orig"), length(origToRename)))        
+        }
+        setnames(de, old=from, new=columnName)    
+    } else {
+        de[, (columnName) := eval(from, envir = de.raw)]
+    }
+    de
+}
+
+getRanks <- function(geneDERaw, geneDEMeta, org.annos) {
+    geneDE <- prepareDE(geneDERaw, geneDEMeta)
+    org.anno <- org.annos[[geneDEMeta$organism]]
+    
+    if (geneDEMeta$idType != org.anno$baseId) {
+        setkey(geneDE, ID)
+        geneDE <- org.anno$mapFrom[[geneDEMeta$idType]][geneDE]
+        setnames(geneDE, "gene", "ID")
+        geneDE <- geneDE[!is.na(ID)]
+    }
+    
+    if (!is.na(geneDEMeta$columns$baseMean)) {
+        geneDE <- geneDE[order(baseMean, decreasing = T)]
+        geneDE <- geneDE[!duplicated(ID)]
+        geneDE <- head(geneDE, n=10000)
+    } else {
+        geneDE <- geneDE[order(abs(stat), decreasing = T)]
+        geneDE <- geneDE[!duplicated(ID)]
+    }
+    
+    ranks <- setNames(geneDE$stat, geneDE$ID)
+    ranks.finite <- ranks[is.finite(ranks)]
+    ranks[ranks > 0 & !is.finite(ranks)] <- max(ranks.finite)
+    ranks[ranks < 0 & !is.finite(ranks)] <- min(ranks.finite)
+    ranks <- sort(ranks, decreasing=TRUE)
+    ranks
+}

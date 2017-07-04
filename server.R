@@ -1,10 +1,4 @@
-
-# This is the server logic for a Shiny web application.
-# You can find out more about building applications with Shiny here:
-#
-# http://shiny.rstudio.com
-#
-
+library(data.table)
 library(shiny)
 library(shinydashboard)
 library(shinyjs)
@@ -15,30 +9,16 @@ library(svglite)
 library(hash)
 library(AnnotationDbi)
 
-load("org.Hs.eg.anno.rda")
-load("org.Mm.eg.anno.rda")
-org.annos <- list("Mus musculus"=org.Mm.eg.anno, "Homo sapiens"=org.Hs.eg.anno)
+source("./functions.R")
 
-pathways <- NULL
-ranks <- NULL
+if (!file.exists("data/org.annos.rda")) {
+    source("prepare.R")
+}
+load("data/org.annos.rda")
+load("data/pathways.msigdb.rda")
+
 stripped_to_full <- NULL
 full_to_stripped <- NULL
-detectedSpecies <- NULL
-detectedFormat <- NULL
-alreadyConverted <- FALSE
-
-get_pathways <- function(gmt.file) {
-    pathwayLines <- strsplit(readLines(gmt.file), "\t")
-    aux <- lapply(pathwayLines, tail, -2)
-    names(aux) <- sapply(pathwayLines, head, 1)
-    return(aux)
-}
-
-get_ranks <- function(tsv.file) {
-    aux <- read.table(tsv.file, header=T, colClasses = c("character", "numeric"))
-    aux <- setNames(aux$t, aux$ID)
-    return(aux)
-}
 
 createLink <- function(val) {
     sprintf('<button id="%s" onclick="btnclick(this.id)">%s</button>', val, 'Show plot')
@@ -48,53 +28,6 @@ stripSpecialChars <- function(string) {
     gsub("[\\'\\;\\&\\:\\,\\.]", "", string)
 }
 
-loadPathwayFile <- function(path) {
-    bonus_pathways <- get_pathways(path)
-    pathways <<- c(pathways, bonus_pathways)
-}
-
-convertToEntrez <- function() {
-    if (alreadyConverted | detectedFormat == 'ENTREZID') {
-        return()
-    }
-
-    if (detectedSpecies == 'mm') {
-        converted <- AnnotationDbi::mapIds(org.Mm.eg.db, keys=names(ranks), column="ENTREZID", keytype=detectedFormat, multiVals="first")
-    } else {
-        converted <- AnnotationDbi::mapIds(org.Hs.eg.db, keys=names(ranks), column="ENTREZID", keytype=detectedFormat, multiVals="first")
-    }
-
-    print(paste('Failed to convert', sum(is.na(converted)), '/', length(converted), 'genes'))
-    inds <- which(!is.na(converted))
-    ranks <<- ranks[inds]
-    names(ranks) <<- converted[inds]
-    alreadyConverted <<- TRUE
-}
-
-detectSpecies <- function() {
-    idExample <- names(ranks)[1]
-    detectedFormat <<- 'ENTREZID'
-    if (is.na(as.numeric(idExample))) {
-        if (startsWith(idExample, 'ENS')) {
-            detectedFormat <<- 'ENSEMBL'
-        } else {
-            detectedFormat <<- 'SYMBOL'
-        }
-    }
-    detectedSpecies <<- tryCatch({
-        converted <- AnnotationDbi::mapIds(org.Mm.eg.db, keys=idExample, column="ENTREZID", keytype=detectedFormat, multiVals="first")
-        'mm'
-    }, error = function(e) {
-        tryCatch({
-            converted <- AnnotationDbi::mapIds(org.Hs.eg.db, keys=idExample, column="ENTREZID", keytype=detectedFormat, multiVals="first")
-            'hs'
-        }, error = function(e) {
-            'unknown'
-        })
-    })
-    print(paste(detectedFormat, detectedSpecies))
-    return(detectedSpecies)
-}
 
 shinyServer(function(input, output, session) {
 
@@ -105,111 +38,107 @@ shinyServer(function(input, output, session) {
         }
     )
 
-    output$downloadExampleGMT <- downloadHandler(
-        filename = 'sample.gmt',
-        content = function(con) {
-            file.copy('./data/sample.gmt', con)
-        }
-    )
-
-    geneDE <- reaction({
+    geneDEInput <- reactive({
         tsv.file <- input$tsvfile$datapath
         if (is.null(tsv.file))
             return(NULL)
         geneDe <- fread(tsv.file)
     })
-
-    geneDE
-
-    output$useOwnPathwaysRadio <- renderUI({
-        tsv.file <- input$tsvfile$datapath
-        if (is.null(tsv.file))
+    
+    geneDEMetaInput <- reactive({
+        geneDE <- geneDEInput()
+        if (is.null(geneDE)) {
             return(NULL)
-
-        ranks <<- get_ranks(tsv.file)
-        detectSpecies()
-        if (detectedSpecies == 'unknown') {
-            return(NULL)
-        } else {
-            title <- ifelse(detectedSpecies == 'hs', 'Detected species: Homo sapiens', 'Detected species: Mus musculus')
-            radioButtons("useOwnPathways", title,
-                         c("Use my own pathways" = TRUE,
-                           "Use standard pathways" = FALSE),
-                         selected = FALSE)
         }
+        getGeneDEMeta(geneDE, org.annos)
+    })
+
+    geneRanksInput <- reactive({
+        geneDEMeta <- geneDEMetaInput()
+        if (is.null(geneDEMeta)) {
+            return(NULL)
+        }
+        geneDE <- geneDEInput()
+        geneRanks <- getRanks(geneDE, geneDEMeta, org.annos)
+    })
+    
+    output$uiDEInfo <- renderUI({
+        geneDEMeta <- geneDEMetaInput()
+        if (is.null(geneDEMeta)) {
+            return(NULL)
+        }
+        geneRanks <- geneRanksInput()
+        
+        geneRanksSym <- paste0(org.annos[[geneDEMeta$organism]]$genes[names(geneRanks), symbol], 
+                               ": ", geneRanks)
+        
+        div(p("Detected info:"),
+            p(sprintf("species: %s", geneDEMeta$organism)),
+            p(sprintf("ID column: %s", geneDEMeta$columns$ID)),
+            p(sprintf("ID type: %s", geneDEMeta$idType)),
+            p(sprintf("Mean expression column: %s", geneDEMeta$columns$baseMean)),
+            p(sprintf("Ranking column: %s", geneDEMeta$columns$stat)),
+            p(sprintf("Top up genes: %s", paste0(head(geneRanksSym), collapse=", "))),
+            p(sprintf("Top down genes: %s", paste0(tail(geneRanksSym), collapse=", ")))
+            )
     })
 
     output$selectPathways <- renderUI({
-
-        if (is.null(input$tsvfile$datapath)) {
+        geneDEMeta <- geneDEMetaInput()
+        if (is.null(geneDEMeta)) {
             return(NULL)
         }
-
-        if (!is.null(input$useOwnPathways)) {
-            if (input$useOwnPathways) {
-                fileInput('gmtfile', 'Choose *.gmt file')
-            } else if (detectedSpecies == 'mm') {
-                includeHTML('static/mm-checkboxes.html')
-            } else {
-                includeHTML('static/hs-checkboxes.html')
-            }
+        
+        if (geneDEMeta$organism == 'Mus musculus') {
+            includeHTML('static/mm-checkboxes.html')
+        } else if (geneDEMeta$organism == 'Homo sapiens') {
+            includeHTML('static/hs-checkboxes.html')
         } else {
-            if (!is.null(detectedSpecies)) {
-                fileInput('gmtfile', 'Unknown species, use your own *.gmt file')
-            } else {
-                return(NULL)
-            }
+            includeHTML("Unsupported organism!")
         }
+    })
+    
+    pathwaysInput <- reactive({
+        geneDEMeta <- geneDEMetaInput()
+        if (is.null(geneDEMeta)) {
+            return(NULL)
+        }
+        selectedGenesets <-input$selectedGenesets 
+        if (length(selectedGenesets) == 0)
+            return(NULL)
+        
+        pathways <- do.call(c, pathways.msigdb[[geneDEMeta$organism]][selectedGenesets])
+        pathways
     })
 
     processButtonClick <- eventReactive(input$submitButton, {
-
-        if (is.null(detectedSpecies))
+        .messagef("Submit button clicked")
+        geneDEMeta <- geneDEMetaInput()
+        if (is.null(geneDEMeta)) {
             return(NULL)
-        print(input$useOwnPathways)
-        if (detectedSpecies == 'unknown') {
-            # Using user defined pathways, therefore we don't convert input genes to entrez
-            gmt.file <- input$gmtfile$datapath
-            if (is.null(gmt.file))
-                return(NULL)
-
-            addClass(selector = "body", class = "sidebar-collapse")
-            shinyjs::show("container")
-
-            pathways <<- get_pathways(gmt.file)
-            print(paste("User provided pathways:", length(pathways)))
-        } else if (input$useOwnPathways) {
-            # Using user defined pathways, therefore we don't convert input genes to entrez
-            gmt.file <- input$gmtfile$datapath
-            if (is.null(gmt.file))
-                return(NULL)
-
-            addClass(selector = "body", class = "sidebar-collapse")
-            shinyjs::show("container")
-
-            pathways <<- get_pathways(gmt.file)
-            print(paste("User provided pathways:", length(pathways)))
-        } else {
-            print(paste(input$selectedGenesets))
-            # Predefined pathways, converting genes to entrez
-            if (length(input$selectedGenesets) == 0)
-                return(NULL)
-
-            addClass(selector = "body", class = "sidebar-collapse")
-            shinyjs::show("container")
-
-            convertToEntrez()
-            pathways <<- NULL
-            bonus_pathway_files <-
-                sapply(input$selectedGenesets, function(set) { paste0('./data/', detectedSpecies, '.', set, '.gmt') })
-            lapply(bonus_pathway_files, loadPathwayFile)
-
-            print(paste("User selected predefined pathways:", length(pathways)))
         }
-
+        
+        selectedGenesets <-input$selectedGenesets 
+        if (length(selectedGenesets) == 0) {
+            return(NULL)
+        }
+        
+        print(paste(selectedGenesets))
+        
+        geneDE <- geneDEInput()
+        ranks <- geneRanksInput()
+        pathways <- pathwaysInput()
+        
+        
+        
+        addClass(selector = "body", class = "sidebar-collapse")
+        shinyjs::show("container")
+        
+        pathways <- do.call(c, pathways.msigdb[[geneDEMeta$organism]][selectedGenesets])
+        
         res <- NULL
         set.seed(42)
-        res <- fgsea(pathways, ranks, nperm=25000, maxSize=500)
+        res <- fgsea(pathways, ranks, nperm=25000, minSize=15, maxSize=500)
         strippedPathways <- stripSpecialChars(res$pathway)
         full_to_stripped <<- hash(keys=res$pathway, values=strippedPathways)
         stripped_to_full <<- hash(keys=strippedPathways, values=res$pathway)
@@ -241,6 +170,8 @@ shinyServer(function(input, output, session) {
 
     observe({
         if (!is.null(input$pathway)) {
+            pathways <- isolate(pathwaysInput())
+            ranks <- isolate(geneRanksInput())
             pathway <- stripped_to_full[[input$pathway]]
             dir.create("www/img", showWarnings=FALSE)
             filePath <- tempfile(tmpdir = "www/img", fileext = '.svg')
@@ -255,3 +186,4 @@ shinyServer(function(input, output, session) {
         }
     })
 })
+
