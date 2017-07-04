@@ -13,9 +13,11 @@ library(fgsea)
 library(ggplot2)
 library(svglite)
 library(hash)
-library(org.Hs.eg.db)
-library(org.Mm.eg.db)
 library(AnnotationDbi)
+
+load("org.Hs.eg.anno.rda")
+load("org.Mm.eg.anno.rda")
+org.annos <- list("Mus musculus"=org.Mm.eg.anno, "Homo sapiens"=org.Hs.eg.anno)
 
 pathways <- NULL
 ranks <- NULL
@@ -32,8 +34,8 @@ get_pathways <- function(gmt.file) {
     return(aux)
 }
 
-get_ranks <- function(rnk.file) {
-    aux <- read.table(rnk.file, header=T, colClasses = c("character", "numeric"))
+get_ranks <- function(tsv.file) {
+    aux <- read.table(tsv.file, header=T, colClasses = c("character", "numeric"))
     aux <- setNames(aux$t, aux$ID)
     return(aux)
 }
@@ -96,10 +98,10 @@ detectSpecies <- function() {
 
 shinyServer(function(input, output, session) {
 
-    output$downloadExampleRNK <- downloadHandler(
-        filename = 'sample.rnk',
+    output$downloadExampleTSV <- downloadHandler(
+        filename = 'Ctrl.vs.MandLPSandIFNg.gene.de.tsv',
         content = function(con) {
-            file.copy('./data/sample.rnk', con)
+            file.copy('./data/Ctrl.vs.MandLPSandIFNg.gene.de.tsv', con)
         }
     )
 
@@ -110,12 +112,21 @@ shinyServer(function(input, output, session) {
         }
     )
 
+    geneDE <- reaction({
+        tsv.file <- input$tsvfile$datapath
+        if (is.null(tsv.file))
+            return(NULL)
+        geneDe <- fread(tsv.file)
+    })
+
+    geneDE
+
     output$useOwnPathwaysRadio <- renderUI({
-        rnk.file <- input$rnkfile$datapath
-        if (is.null(rnk.file))
+        tsv.file <- input$tsvfile$datapath
+        if (is.null(tsv.file))
             return(NULL)
 
-        ranks <<- get_ranks(rnk.file)
+        ranks <<- get_ranks(tsv.file)
         detectSpecies()
         if (detectedSpecies == 'unknown') {
             return(NULL)
@@ -130,7 +141,7 @@ shinyServer(function(input, output, session) {
 
     output$selectPathways <- renderUI({
 
-        if (is.null(input$rnkfile$datapath)) {
+        if (is.null(input$tsvfile$datapath)) {
             return(NULL)
         }
 

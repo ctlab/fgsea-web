@@ -22,14 +22,14 @@ dashboardPage(
 
         useShinyjs(),
 
-        fileInput('rnkfile',
-                  'Choose rnk file'),
+        fileInput('tsvfile',
+                  'Choose DE tsv file'),
 
         uiOutput("useOwnPathwaysRadio"),
         uiOutput("selectPathways"),
         actionButton("submitButton", "Perform Enrichment", class="btn-submit"),
 
-        downloadLink('downloadExampleRNK', 'Download sample rnk file', class="sample-download"),
+        downloadLink('downloadExampleTSV', 'Download sample DE tsv file', class="sample-download"),
         downloadLink('downloadExampleGMT', 'Download sample gmt file', class="sample-download")
     ),
 
